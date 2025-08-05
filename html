@@ -1,0 +1,1935 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>InvestPro - Инвестиционная платформа</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .card-hover {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .card-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+        .balance-circle {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+        .mobile-menu {
+            transform: translateX(-100%);
+            transition: transform 0.3s ease;
+        }
+        .mobile-menu.open {
+            transform: translateX(0);
+        }
+        @media (max-width: 768px) {
+            .desktop-sidebar {
+                display: none;
+            }
+        }
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            padding: 15px;
+            border-radius: 8px;
+            color: white;
+            font-weight: bold;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: all 0.3s ease;
+        }
+        .notification.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+        .notification.success {
+            background-color: #10b981;
+        }
+        .notification.error {
+            background-color: #ef4444;
+        }
+        .admin-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Уведомления -->
+    <div id="notification" class="notification"></div>
+
+    <!-- Экран входа/регистрации -->
+    <div id="authScreen" class="min-h-screen gradient-bg flex items-center justify-center">
+        <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md">
+            <div class="text-center mb-8">
+                <h1 class="text-3xl font-bold text-gray-800 mb-2">InvestPro</h1>
+                <p class="text-gray-600">Ваша инвестиционная платформа</p>
+            </div>
+            
+            <div id="loginForm">
+                <h2 class="text-2xl font-semibold mb-6 text-center">Вход</h2>
+                <div class="space-y-4">
+                    <input type="email" id="loginEmail" placeholder="Email" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <input type="password" id="loginPassword" placeholder="Пароль" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <button onclick="login()" class="w-full bg-blue-600 text-white p-3 rounded-lg hover:bg-blue-700 transition duration-300">Войти</button>
+                </div>
+                <p class="text-center mt-4 text-gray-600">
+                    Нет аккаунта? <button onclick="showRegister()" class="text-blue-600 hover:underline">Регистрация</button>
+                </p>
+                <div class="mt-4 p-3 bg-gray-100 rounded-lg text-sm">
+                    <p class="font-semibold mb-2">Тестовые данные:</p>
+                    <p><strong>Пользователь:</strong> user@test.com / user123</p>
+                    <p class="text-xs text-gray-600 mt-1">Админ панель доступна только владельцу</p>
+                </div>
+            </div>
+            
+            <div id="registerForm" class="hidden">
+                <h2 class="text-2xl font-semibold mb-6 text-center">Регистрация</h2>
+                <div class="space-y-4">
+                    <input type="text" id="regName" placeholder="Имя" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <input type="email" id="regEmail" placeholder="Email" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <input type="password" id="regPassword" placeholder="Пароль" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <input type="text" id="regReferral" placeholder="Реферальный код (необязательно)" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <button onclick="register()" class="w-full bg-green-600 text-white p-3 rounded-lg hover:bg-green-700 transition duration-300">Зарегистрироваться</button>
+                </div>
+                <p class="text-center mt-4 text-gray-600">
+                    Уже есть аккаунт? <button onclick="showLogin()" class="text-blue-600 hover:underline">Войти</button>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Главная панель -->
+    <div id="mainApp" class="hidden min-h-screen bg-gray-50">
+        <!-- Верхняя панель -->
+        <header class="bg-white shadow-sm border-b">
+            <div class="px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center h-16">
+                    <div class="flex items-center">
+                        <button onclick="toggleMobileMenu()" class="md:hidden mr-3 p-2">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                            </svg>
+                        </button>
+                        <h1 class="text-xl md:text-2xl font-bold text-gray-900">InvestPro</h1>
+                    </div>
+                    <div class="flex items-center space-x-2 md:space-x-4">
+                        <div class="balance-circle text-white px-3 md:px-6 py-2 rounded-full">
+                            <span class="font-semibold text-sm md:text-base">
+                                <span class="hidden sm:inline">Баланс: </span><span id="userBalance">0</span> сом
+                            </span>
+                        </div>
+                        <span id="userRole" class="text-sm bg-gray-200 px-2 py-1 rounded"></span>
+                        <button onclick="logout()" class="text-gray-500 hover:text-gray-700 text-sm md:text-base">Выход</button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Боковое меню -->
+        <div class="flex relative">
+            <!-- Desktop Sidebar -->
+            <nav class="desktop-sidebar w-64 bg-white shadow-sm h-screen hidden md:block overflow-y-auto">
+                <div class="p-4">
+                    <ul class="space-y-2" id="sidebarMenu">
+                        <!-- Меню будет заполнено динамически -->
+                    </ul>
+                </div>
+            </nav>
+
+            <!-- Mobile Menu Overlay -->
+            <div id="mobileMenuOverlay" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden md:hidden" onclick="closeMobileMenu()"></div>
+            
+            <!-- Mobile Sidebar -->
+            <nav id="mobileSidebar" class="mobile-menu fixed left-0 top-0 w-64 bg-white shadow-lg h-full z-50 md:hidden overflow-y-auto">
+                <div class="p-4">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-xl font-bold">Меню</h2>
+                        <button onclick="closeMobileMenu()" class="p-2">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
+                    </div>
+                    <ul class="space-y-2" id="mobileSidebarMenu">
+                        <!-- Меню будет заполнено динамически -->
+                    </ul>
+                </div>
+            </nav>
+
+            <!-- Основной контент -->
+            <main class="flex-1 p-4 md:p-6 overflow-y-auto">
+                <!-- Главная страница -->
+                <div id="dashboard" class="section">
+                    <h2 class="text-2xl md:text-3xl font-bold mb-4 md:mb-6">Добро пожаловать!</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-6 md:mb-8">
+                        <div class="bg-white p-6 rounded-xl shadow-sm card-hover">
+                            <h3 class="text-lg font-semibold mb-2">Общий баланс</h3>
+                            <p class="text-3xl font-bold text-blue-600"><span id="dashBalance">0</span> сом</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl shadow-sm card-hover">
+                            <h3 class="text-lg font-semibold mb-2">Активные VIP</h3>
+                            <p class="text-3xl font-bold text-green-600"><span id="activeInvestments">0</span></p>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl shadow-sm card-hover">
+                            <h3 class="text-lg font-semibold mb-2">Всего VIP</h3>
+                            <p class="text-3xl font-bold text-purple-600"><span id="referralCount">0</span></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- VIP пакеты -->
+                <div id="vips" class="section hidden">
+                    <!-- Пополнение и вывод -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                        <div class="bg-white p-6 rounded-xl shadow-sm">
+                            <h3 class="text-xl font-semibold mb-4 text-green-600">💰 Пополнить баланс</h3>
+                            <div class="space-y-4">
+                                <input type="number" id="depositAmount" placeholder="Сумма (мин. 700 сом)" class="w-full p-3 border border-gray-300 rounded-lg">
+                                <select id="depositMethod" onchange="showPaymentDetails()" class="w-full p-3 border border-gray-300 rounded-lg">
+                                    <option value="">Выберите способ</option>
+                                    <option value="elsom">Элсом</option>
+                                    <option value="odengi">О!Деньги</option>
+                                    <option value="megapay">MegaPay</option>
+                                    <option value="mbank">МБанк</option>
+                                    <option value="optima">Оптима Банк</option>
+                                </select>
+                                
+                                <!-- Детали для перевода -->
+                                <div id="paymentDetails" class="hidden bg-blue-50 p-4 rounded-lg border border-blue-200">
+                                    <h4 class="font-semibold text-blue-800 mb-2">📋 Реквизиты для перевода:</h4>
+                                    <div id="paymentInfo" class="space-y-2 text-sm">
+                                        <!-- Информация будет заполнена динамически -->
+                                    </div>
+                                    <div class="mt-3 p-2 bg-yellow-100 rounded border border-yellow-300">
+                                        <p class="text-xs text-yellow-800">
+                                            ⚠️ <strong>Важно:</strong> После перевода обязательно подайте заявку ниже с указанием суммы и вашего номера телефона!
+                                        </p>
+                                    </div>
+                                </div>
+                                
+                                <input type="tel" id="depositPhone" placeholder="Ваш номер телефона" class="w-full p-3 border border-gray-300 rounded-lg">
+                                <button onclick="requestDeposit()" class="w-full bg-green-600 text-white p-3 rounded-lg hover:bg-green-700 transition duration-300">Подать заявку на пополнение</button>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-white p-6 rounded-xl shadow-sm">
+                            <h3 class="text-xl font-semibold mb-4 text-red-600">💸 Вывести средства</h3>
+                            <div class="space-y-4">
+                                <input type="number" id="withdrawAmount" placeholder="Сумма (мин. 500 сом)" class="w-full p-3 border border-gray-300 rounded-lg">
+                                <select id="withdrawMethod" class="w-full p-3 border border-gray-300 rounded-lg">
+                                    <option value="">Выберите способ</option>
+                                    <option value="elsom">Элсом</option>
+                                    <option value="odengi">О!Деньги</option>
+                                    <option value="megapay">MegaPay</option>
+                                    <option value="mbank">МБанк</option>
+                                    <option value="optima">Оптима Банк</option>
+                                </select>
+                                <input type="tel" id="withdrawPhone" placeholder="Ваш номер телефона/карты" class="w-full p-3 border border-gray-300 rounded-lg">
+                                
+                                <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                                    <h4 class="font-semibold text-yellow-800 mb-2">ℹ️ Информация о выводе:</h4>
+                                    <div class="text-sm text-yellow-700 space-y-1">
+                                        <p>• Минимальная сумма вывода: <strong>500 сом</strong></p>
+                                        <p>• Время обработки: <strong>от 1 до 24 часов</strong></p>
+                                        <p>• Комиссия: <strong>0%</strong></p>
+                                        <p>• <strong>Важно:</strong> Для вывода нужно иметь хотя бы один VIP пакет!</p>
+                                    </div>
+                                </div>
+                                
+                                <button onclick="requestWithdrawal()" class="w-full bg-red-600 text-white p-3 rounded-lg hover:bg-red-700 transition duration-300">Подать заявку на вывод</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h2 class="text-2xl md:text-3xl font-bold mb-4 md:mb-6">VIP пакеты</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+                        <div class="bg-white p-6 rounded-xl shadow-sm card-hover border-2 border-blue-200">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-xl font-semibold text-blue-600">💎 VIP 1</h3>
+                                <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">Только один раз</span>
+                            </div>
+                            <div class="mb-4">
+                                <p class="text-gray-600">Стоимость: <span class="font-semibold text-2xl text-blue-600">700 сом</span></p>
+                                <p class="text-gray-600">Ежедневный доход: <span class="font-semibold text-green-600">95 сом</span></p>
+                                <p class="text-gray-600">Срок: <span class="font-semibold">30 дней</span></p>
+                                <p class="text-gray-600">Общий доход: <span class="font-semibold text-green-600">2,850 сом</span></p>
+                            </div>
+                            <button onclick="buyVip(1, 700, 95)" class="w-full bg-blue-600 text-white p-3 rounded-lg hover:bg-blue-700 transition duration-300" id="vip1Btn">Купить VIP 1</button>
+                        </div>
+                        
+                        <div class="bg-white p-6 rounded-xl shadow-sm card-hover border-2 border-green-200">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-xl font-semibold text-green-600">💎 VIP 2</h3>
+                                <span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">Многоразовый</span>
+                            </div>
+                            <div class="mb-4">
+                                <p class="text-gray-600">Стоимость: <span class="font-semibold text-2xl text-green-600">2,000 сом</span></p>
+                                <p class="text-gray-600">Ежедневный доход: <span class="font-semibold text-green-600">150 сом</span></p>
+                                <p class="text-gray-600">Срок: <span class="font-semibold">30 дней</span></p>
+                                <p class="text-gray-600">Общий доход: <span class="font-semibold text-green-600">4,500 сом</span></p>
+                            </div>
+                            <button onclick="buyVip(2, 2000, 150)" class="w-full bg-green-600 text-white p-3 rounded-lg hover:bg-green-700 transition duration-300">Купить VIP 2</button>
+                        </div>
+                        
+                        <div class="bg-white p-6 rounded-xl shadow-sm card-hover border-2 border-purple-200">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-xl font-semibold text-purple-600">💎 VIP 3</h3>
+                                <span class="bg-purple-100 text-purple-800 px-2 py-1 rounded-full text-xs">Многоразовый</span>
+                            </div>
+                            <div class="mb-4">
+                                <p class="text-gray-600">Стоимость: <span class="font-semibold text-2xl text-purple-600">4,000 сом</span></p>
+                                <p class="text-gray-600">Ежедневный доход: <span class="font-semibold text-green-600">200 сом</span></p>
+                                <p class="text-gray-600">Срок: <span class="font-semibold">30 дней</span></p>
+                                <p class="text-gray-600">Общий доход: <span class="font-semibold text-green-600">6,000 сом</span></p>
+                            </div>
+                            <button onclick="buyVip(3, 4000, 200)" class="w-full bg-purple-600 text-white p-3 rounded-lg hover:bg-purple-700 transition duration-300">Купить VIP 3</button>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-8">
+                        <h3 class="text-2xl font-semibold mb-4">Мои VIP пакеты</h3>
+                        <div id="myVips" class="bg-white rounded-xl shadow-sm p-6">
+                            <p class="text-gray-500">У вас пока нет активных VIP пакетов</p>
+                        </div>
+                    </div>
+                </div>
+
+
+
+                <!-- Профиль -->
+                <div id="profile" class="section hidden">
+                    <h2 class="text-2xl md:text-3xl font-bold mb-4 md:mb-6">Профиль</h2>
+                    <div class="bg-white p-6 rounded-xl shadow-sm">
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Имя</label>
+                                <input type="text" id="profileName" class="w-full p-3 border border-gray-300 rounded-lg">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                                <input type="email" id="profileEmail" class="w-full p-3 border border-gray-300 rounded-lg">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Телефон</label>
+                                <input type="tel" id="profilePhone" placeholder="+996 XXX XXX XXX" class="w-full p-3 border border-gray-300 rounded-lg">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Город</label>
+                                <select id="profileCity" class="w-full p-3 border border-gray-300 rounded-lg">
+                                    <option value="">Выберите город</option>
+                                    <option value="bishkek">Бишкек</option>
+                                    <option value="osh">Ош</option>
+                                    <option value="jalal-abad">Жалал-Абад</option>
+                                    <option value="karakol">Каракол</option>
+                                    <option value="tokmok">Токмок</option>
+                                </select>
+                            </div>
+                            <button onclick="updateProfile()" class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition duration-300">Сохранить изменения</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- АДМИН ПАНЕЛЬ (только для админов) -->
+                <div id="admin" class="section hidden" style="display: none;">
+                    <h2 class="text-2xl md:text-3xl font-bold mb-6">Админ панель</h2>
+                    
+                    <!-- Быстрая статистика -->
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                        <div class="bg-white p-6 rounded-xl shadow-sm">
+                            <h3 class="text-sm font-medium text-gray-500">Всего пользователей</h3>
+                            <p class="text-3xl font-bold text-blue-600" id="totalUsers">0</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl shadow-sm">
+                            <h3 class="text-sm font-medium text-gray-500">Активные инвестиции</h3>
+                            <p class="text-3xl font-bold text-green-600" id="totalInvestments">0</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl shadow-sm">
+                            <h3 class="text-sm font-medium text-gray-500">Общая сумма</h3>
+                            <p class="text-3xl font-bold text-purple-600" id="totalAmount">0</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl shadow-sm">
+                            <h3 class="text-sm font-medium text-gray-500">Доход сегодня</h3>
+                            <p class="text-3xl font-bold text-orange-600" id="todayIncome">0</p>
+                        </div>
+                    </div>
+
+                    <!-- Админ навигация -->
+                    <div class="bg-white rounded-xl shadow-sm mb-6">
+                        <div class="border-b border-gray-200">
+                            <nav class="-mb-px flex space-x-8 px-6 overflow-x-auto" id="adminTabs">
+                                <button onclick="showAdminTab('analytics')" class="admin-tab-btn py-4 px-1 border-b-2 border-blue-500 font-medium text-sm text-blue-600 whitespace-nowrap">Аналитика</button>
+                                <button onclick="showAdminTab('users')" class="admin-tab-btn py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 whitespace-nowrap">Пользователи</button>
+                                <button onclick="showAdminTab('deposits')" class="admin-tab-btn py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 whitespace-nowrap">Пополнения</button>
+                                <button onclick="showAdminTab('withdrawals')" class="admin-tab-btn py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 whitespace-nowrap">Выводы</button>
+                                <button onclick="showAdminTab('cards')" class="admin-tab-btn py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 whitespace-nowrap">Карты</button>
+                                <button onclick="showAdminTab('marketing')" class="admin-tab-btn py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 whitespace-nowrap">Маркетинг</button>
+                                <button onclick="showAdminTab('finance')" class="admin-tab-btn py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 whitespace-nowrap">Финансы</button>
+                                <button onclick="showAdminTab('security')" class="admin-tab-btn py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 whitespace-nowrap">Безопасность</button>
+                                <button onclick="showAdminTab('settings')" class="admin-tab-btn py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 whitespace-nowrap">Настройки</button>
+                            </nav>
+                        </div>
+                    </div>
+
+                    <!-- Аналитика -->
+                    <div id="adminAnalytics" class="admin-tab-content">
+                        <div class="admin-grid mb-8">
+                            <div class="bg-white p-6 rounded-xl shadow-sm">
+                                <h3 class="text-lg font-semibold mb-4">Статистика по дням</h3>
+                                <canvas id="dailyChart" width="400" height="200"></canvas>
+                            </div>
+                            <div class="bg-white p-6 rounded-xl shadow-sm">
+                                <h3 class="text-lg font-semibold mb-4">Инвестиции по планам</h3>
+                                <canvas id="plansChart" width="400" height="200"></canvas>
+                            </div>
+                            <div class="bg-white p-6 rounded-xl shadow-sm">
+                                <h3 class="text-lg font-semibold mb-4">География пользователей</h3>
+                                <div id="geoStats" class="space-y-2">
+                                    <div class="flex justify-between"><span>Бишкек:</span><span class="font-semibold">45%</span></div>
+                                    <div class="flex justify-between"><span>Ош:</span><span class="font-semibold">25%</span></div>
+                                    <div class="flex justify-between"><span>Жалал-Абад:</span><span class="font-semibold">15%</span></div>
+                                    <div class="flex justify-between"><span>Другие:</span><span class="font-semibold">15%</span></div>
+                                </div>
+                            </div>
+                            <div class="bg-white p-6 rounded-xl shadow-sm">
+                                <h3 class="text-lg font-semibold mb-4">Активность пользователей</h3>
+                                <div class="space-y-3">
+                                    <div class="flex items-center justify-between">
+                                        <span>Онлайн сейчас</span>
+                                        <span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-sm">23</span>
+                                    </div>
+                                    <div class="flex items-center justify-between">
+                                        <span>Активны сегодня</span>
+                                        <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm">156</span>
+                                    </div>
+                                    <div class="flex items-center justify-between">
+                                        <span>Новые за неделю</span>
+                                        <span class="bg-purple-100 text-purple-800 px-2 py-1 rounded-full text-sm">34</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Пользователи -->
+                    <div id="adminUsers" class="admin-tab-content hidden">
+                        <div class="bg-white rounded-xl shadow-sm">
+                            <div class="p-6 border-b border-gray-200">
+                                <div class="flex justify-between items-center">
+                                    <h3 class="text-lg font-semibold">Управление пользователями</h3>
+                                    <div class="flex space-x-2">
+                                        <input type="text" placeholder="Поиск пользователей..." class="px-3 py-2 border border-gray-300 rounded-lg">
+                                        <button class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">Поиск</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full divide-y divide-gray-200">
+                                    <thead class="bg-gray-50">
+                                        <tr>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Пользователь</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Пароль</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Телефон</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Баланс</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Регистрация</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Статус</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Действия</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="usersTable" class="bg-white divide-y divide-gray-200">
+                                        <!-- Пользователи будут загружены динамически -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Пополнения -->
+                    <div id="adminDeposits" class="admin-tab-content hidden">
+                        <div class="bg-white rounded-xl shadow-sm">
+                            <div class="p-6 border-b border-gray-200">
+                                <h3 class="text-lg font-semibold">Заявки на пополнение</h3>
+                                <p class="text-sm text-gray-600 mt-1">Ожидают подтверждения: <span id="pendingDepositsCount" class="font-semibold text-orange-600">0</span></p>
+                            </div>
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full divide-y divide-gray-200">
+                                    <thead class="bg-gray-50">
+                                        <tr>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Пользователь</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Сумма</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Способ</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Телефон</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Дата</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Статус</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Действия</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="depositsTable" class="bg-white divide-y divide-gray-200">
+                                        <!-- Заявки будут загружены динамически -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Выводы -->
+                    <div id="adminWithdrawals" class="admin-tab-content hidden">
+                        <div class="bg-white rounded-xl shadow-sm">
+                            <div class="p-6 border-b border-gray-200">
+                                <h3 class="text-lg font-semibold">Заявки на вывод</h3>
+                                <p class="text-sm text-gray-600 mt-1">Ожидают подтверждения: <span id="pendingWithdrawalsCount" class="font-semibold text-red-600">0</span></p>
+                            </div>
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full divide-y divide-gray-200">
+                                    <thead class="bg-gray-50">
+                                        <tr>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Пользователь</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Сумма</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Способ</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Телефон</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Дата</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Статус</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Действия</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="withdrawalsTable" class="bg-white divide-y divide-gray-200">
+                                        <!-- Заявки будут загружены динамически -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Управление картами -->
+                    <div id="adminCards" class="admin-tab-content hidden">
+                        <div class="admin-grid">
+                            <div class="bg-white p-6 rounded-xl shadow-sm">
+                                <h3 class="text-lg font-semibold mb-4">💳 Настройки банковской карты</h3>
+                                <div class="space-y-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Название банка</label>
+                                        <input type="text" id="bankName" value="ФИНКА" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Номер карты</label>
+                                        <input type="text" id="cardNumber" value="9417 7189 2770 1693" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Получатель</label>
+                                        <input type="text" id="cardRecipient" value="INSTANT 30061." class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Номер телефона</label>
+                                        <input type="text" id="cardPhone" value="0000000000" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                                    </div>
+                                    <button onclick="updateCardSettings()" class="w-full bg-blue-600 text-white p-3 rounded-lg hover:bg-blue-700 transition duration-300">
+                                        💾 Сохранить настройки
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-white p-6 rounded-xl shadow-sm">
+                                <h3 class="text-lg font-semibold mb-4">📋 Текущие реквизиты</h3>
+                                <div class="space-y-3 bg-gray-50 p-4 rounded-lg">
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-600">Банк:</span>
+                                        <span class="font-semibold" id="currentBankName">ФИНКА БАНК</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-600">Карта:</span>
+                                        <span class="font-mono font-semibold text-blue-600" id="currentCardNumber">9417 7189 2770 1693</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-600">Получатель:</span>
+                                        <span class="font-semibold" id="currentRecipient">INSTANT 30061.</ span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-600">Телефон:</span>
+                                        <span class="font-mono font-semibold text-green-600" id="currentPhone">0000000000</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                                    <p class="text-sm text-yellow-800">
+                                        ⚠️ <strong>Внимание:</strong> Изменения реквизитов сразу отобразятся для всех пользователей при пополнении баланса.
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-white p-6 rounded-xl shadow-sm">
+                                <h3 class="text-lg font-semibold mb-4">📊 Статистика по картам</h3>
+                                <div class="space-y-3">
+                                    <div class="flex justify-between">
+                                        <span>Пополнений сегодня:</span>
+                                        <span class="font-bold text-green-600">12</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span>Сумма за сегодня:</span>
+                                        <span class="font-bold text-blue-600">45,000 сом</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span>Всего пополнений:</span>
+                                        <span class="font-bold text-purple-600">234</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span>Общая сумма:</span>
+                                        <span class="font-bold text-orange-600">1,250,000 сом</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Маркетинг -->
+                    <div id="adminMarketing" class="admin-tab-content hidden">
+                        <div class="admin-grid">
+                            <div class="bg-white p-6 rounded-xl shadow-sm">
+                                <h3 class="text-lg font-semibold mb-4">Промо коды</h3>
+                                <div class="space-y-4">
+                                    <div class="flex space-x-2">
+                                        <input type="text" id="promoCode" placeholder="Код" class="flex-1 p-2 border border-gray-300 rounded">
+                                        <input type="number" id="promoDiscount" placeholder="Скидка %" class="w-24 p-2 border border-gray-300 rounded">
+                                        <button onclick="createPromoCode()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Создать</button>
+                                    </div>
+                                    <div id="promoCodes" class="space-y-2">
+                                        <div class="flex justify-between items-center p-2 bg-gray-50 rounded">
+                                            <span>WELCOME10 (10%)</span>
+                                            <button class="text-red-600 hover:text-red-800">Удалить</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-white p-6 rounded-xl shadow-sm">
+                                <h3 class="text-lg font-semibold mb-4">Рассылка уведомлений</h3>
+                                <div class="space-y-4">
+                                    <input type="text" id="notificationTitle" placeholder="Заголовок" class="w-full p-2 border border-gray-300 rounded">
+                                    <textarea id="notificationText" placeholder="Текст сообщения" class="w-full p-2 border border-gray-300 rounded h-24"></textarea>
+                                    <button onclick="sendNotification()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Отправить всем</button>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-white p-6 rounded-xl shadow-sm">
+                                <h3 class="text-lg font-semibold mb-4">Акции и бонусы</h3>
+                                <div class="space-y-4">
+                                    <div class="flex items-center space-x-2">
+                                        <input type="checkbox" id="bonusActive">
+                                        <label>Бонус за регистрацию: 1000 сом</label>
+                                    </div>
+                                    <div class="flex items-center space-x-2">
+                                        <input type="checkbox" id="referralBonus">
+                                        <label>Реферальный бонус: 15%</label>
+                                    </div>
+                                    <button onclick="updateBonuses()" class="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700">Сохранить</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Финансы -->
+                    <div id="adminFinance" class="admin-tab-content hidden">
+                        <div class="admin-grid">
+                            <div class="bg-white p-6 rounded-xl shadow-sm">
+                                <h3 class="text-lg font-semibold mb-4">Касса</h3>
+                                <div class="space-y-4">
+                                    <div class="flex justify-between">
+                                        <span>Общий баланс системы:</span>
+                                        <span class="font-bold text-green-600">2,450,000 сом</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span>Доходы за месяц:</span>
+                                        <span class="font-bold text-blue-600">+340,000 сом</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span>Выплаты за месяц:</span>
+                                        <span class="font-bold text-red-600">-180,000 сом</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-white p-6 rounded-xl shadow-sm">
+                                <h3 class="text-lg font-semibold mb-4">Операции</h3>
+                                <div class="space-y-2">
+                                    <button onclick="showTransactions()" class="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700">История транзакций</button>
+                                    <button onclick="generateReport()" class="w-full bg-green-600 text-white p-2 rounded hover:bg-green-700">Сформировать отчет</button>
+                                    <button onclick="exportData()" class="w-full bg-purple-600 text-white p-2 rounded hover:bg-purple-700">Экспорт данных</button>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-white p-6 rounded-xl shadow-sm">
+                                <h3 class="text-lg font-semibold mb-4">Курсы валют</h3>
+                                <div class="space-y-2">
+                                    <div class="flex justify-between">
+                                        <span>USD:</span>
+                                        <input type="number" value="87.5" class="w-20 p-1 border border-gray-300 rounded text-right">
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span>EUR:</span>
+                                        <input type="number" value="95.2" class="w-20 p-1 border border-gray-300 rounded text-right">
+                                    </div>
+                                    <button onclick="updateRates()" class="w-full bg-orange-600 text-white p-2 rounded hover:bg-orange-700">Обновить курсы</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Безопасность -->
+                    <div id="adminSecurity" class="admin-tab-content hidden">
+                        <div class="admin-grid">
+                            <div class="bg-white p-6 rounded-xl shadow-sm">
+                                <h3 class="text-lg font-semibold mb-4">Логи входов</h3>
+                                <div class="space-y-2 max-h-64 overflow-y-auto">
+                                    <div class="flex justify-between text-sm p-2 bg-gray-50 rounded">
+                                        <span>user@test.com</span>
+                                        <span>192.168.1.1</span>
+                                        <span>15:30</span>
+                                    </div>
+                                    <div class="flex justify-between text-sm p-2 bg-gray-50 rounded">
+                                        <span>admin@investpro.kg</span>
+                                        <span>192.168.1.100</span>
+                                        <span>14:25</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-white p-6 rounded-xl shadow-sm">
+                                <h3 class="text-lg font-semibold mb-4">Подозрительная активность</h3>
+                                <div class="space-y-2">
+                                    <div class="p-3 bg-red-50 border border-red-200 rounded">
+                                        <p class="text-sm text-red-800">Множественные попытки входа с IP: 192.168.1.50</p>
+                                        <button class="text-red-600 text-sm hover:underline">Заблокировать IP</button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-white p-6 rounded-xl shadow-sm">
+                                <h3 class="text-lg font-semibold mb-4">Настройки безопасности</h3>
+                                <div class="space-y-4">
+                                    <div class="flex items-center space-x-2">
+                                        <input type="checkbox" id="twoFactorRequired" checked>
+                                        <label>Обязательная 2FA для админов</label>
+                                    </div>
+                                    <div class="flex items-center space-x-2">
+                                        <input type="checkbox" id="ipWhitelist">
+                                        <label>Белый список IP адресов</label>
+                                    </div>
+                                    <button onclick="updateSecurity()" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">Сохранить настройки</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Настройки -->
+                    <div id="adminSettings" class="admin-tab-content hidden">
+                        <div class="admin-grid">
+                            <div class="bg-white p-6 rounded-xl shadow-sm">
+                                <h3 class="text-lg font-semibold mb-4">Общие настройки</h3>
+                                <div class="space-y-4">
+                                    <div>
+                                        <label class="block text-sm font-medium mb-1">Название сайта</label>
+                                        <input type="text" value="InvestPro" class="w-full p-2 border border-gray-300 rounded">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium mb-1">Email поддержки</label>
+                                        <input type="email" value="support@investpro.kg" class="w-full p-2 border border-gray-300 rounded">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium mb-1">Минимальная сумма депозита</label>
+                                        <input type="number" value="1000" class="w-full p-2 border border-gray-300 rounded">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-white p-6 rounded-xl shadow-sm">
+                                <h3 class="text-lg font-semibold mb-4">Инвестиционные планы</h3>
+                                <div class="space-y-4">
+                                    <div class="p-3 border border-gray-200 rounded">
+                                        <div class="flex justify-between items-center mb-2">
+                                            <span class="font-medium">Стартовый план</span>
+                                            <button class="text-blue-600 hover:underline">Редактировать</button>
+                                        </div>
+                                        <div class="text-sm text-gray-600">
+                                            <p>Мин. сумма: 2000 сом | Доход: 5 сом/день | Срок: 30 дней</p>
+                                        </div>
+                                    </div>
+                                    <button class="w-full bg-green-600 text-white p-2 rounded hover:bg-green-700">Добавить новый план</button>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-white p-6 rounded-xl shadow-sm">
+                                <h3 class="text-lg font-semibold mb-4">Резервное копирование</h3>
+                                <div class="space-y-2">
+                                    <p class="text-sm text-gray-600">Последний бэкап: 15.12.2024 14:30</p>
+                                    <button onclick="createBackup()" class="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700">Создать бэкап</button>
+                                    <button onclick="restoreBackup()" class="w-full bg-orange-600 text-white p-2 rounded hover:bg-orange-700">Восстановить</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        // Глобальные переменные
+        let currentUser = null;
+        let userBalance = 0;
+        let userVips = [];
+        let allUsers = [];
+        let systemStats = {
+            totalUsers: 156,
+            totalInvestments: 89,
+            totalAmount: 2450000,
+            todayIncome: 45000
+        };
+        let pendingWithdrawals = [];
+        let pendingDeposits = [];
+        let userActivities = [];
+        let dailyIncomeInterval = null;
+
+        // Тестовые пользователи (админ скрыт)
+        const testUsers = [
+            { 
+                id: 2, 
+                name: 'Пользователь', 
+                email: 'user@test.com', 
+                password: 'user123', 
+                role: 'user', 
+                balance: 20, 
+                city: 'osh', 
+                status: 'active',
+                phone: '+996555987654',
+                registrationDate: new Date('2024-11-15'),
+                lastLogin: new Date(),
+                totalDeposits: 0,
+                totalWithdrawals: 0,
+                hasRegistrationBonus: true
+            },
+            { 
+                id: 3, 
+                name: 'Айгуль Токтосунова', 
+                email: 'aigul@mail.ru', 
+                password: 'pass123', 
+                role: 'user', 
+                balance: 20, 
+                city: 'bishkek', 
+                status: 'active',
+                phone: '+996777111222',
+                registrationDate: new Date('2024-12-01'),
+                lastLogin: new Date(Date.now() - 2 * 60 * 60 * 1000),
+                totalDeposits: 0,
+                totalWithdrawals: 0,
+                hasRegistrationBonus: true
+            },
+            { 
+                id: 4, 
+                name: 'Бекжан Алиев', 
+                email: 'bekzhan@gmail.com', 
+                password: 'pass123', 
+                role: 'user', 
+                balance: 20, 
+                city: 'jalal-abad', 
+                status: 'blocked',
+                phone: '+996312555777',
+                registrationDate: new Date('2024-12-10'),
+                lastLogin: new Date(Date.now() - 24 * 60 * 60 * 1000),
+                totalDeposits: 0,
+                totalWithdrawals: 0,
+                hasRegistrationBonus: true
+            }
+        ];
+
+        // Инициализация
+        function init() {
+            allUsers = [...testUsers];
+            
+            // Инициализируем тестовые заявки
+            pendingDeposits = [
+                {
+                    id: 1,
+                    userId: 2,
+                    userName: 'Пользователь',
+                    userEmail: 'user@test.com',
+                    amount: 5000,
+                    method: 'Элсом',
+                    phone: '+996555987654',
+                    date: new Date(),
+                    status: 'pending'
+                },
+                {
+                    id: 2,
+                    userId: 3,
+                    userName: 'Айгуль Токтосунова',
+                    userEmail: 'aigul@mail.ru',
+                    amount: 10000,
+                    method: 'О!Деньги',
+                    phone: '+996777111222',
+                    date: new Date(Date.now() - 30 * 60 * 1000),
+                    status: 'pending'
+                }
+            ];
+
+            pendingWithdrawals = [
+                {
+                    id: 1,
+                    userId: 3,
+                    userName: 'Айгуль Токтосунова',
+                    userEmail: 'aigul@mail.ru',
+                    amount: 3000,
+                    method: 'Элсом',
+                    phone: '+996777111222',
+                    date: new Date(Date.now() - 15 * 60 * 1000),
+                    status: 'pending'
+                }
+            ];
+
+            userActivities = [
+                {
+                    id: 1,
+                    userId: 2,
+                    userName: 'Пользователь',
+                    action: 'Вход в систему',
+                    ip: '192.168.1.100',
+                    date: new Date(),
+                    details: 'Успешный вход'
+                },
+                {
+                    id: 2,
+                    userId: 3,
+                    userName: 'Айгуль Токтосунова',
+                    action: 'Создание инвестиции',
+                    ip: '192.168.1.101',
+                    date: new Date(Date.now() - 45 * 60 * 1000),
+                    details: 'Стартовый план - 2000 сом'
+                }
+            ];
+            
+            showLogin();
+        }
+
+        // Аутентификация
+        function showLogin() {
+            document.getElementById('loginForm').classList.remove('hidden');
+            document.getElementById('registerForm').classList.add('hidden');
+        }
+
+        function showRegister() {
+            document.getElementById('loginForm').classList.add('hidden');
+            document.getElementById('registerForm').classList.remove('hidden');
+        }
+
+        function login() {
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+
+            // Специальный админ доступ только для вас
+            if (email === 'admin@investpro.kg' && password === 'admin123') {
+                currentUser = {
+                    id: 1,
+                    name: 'Админ',
+                    email: 'admin@investpro.kg',
+                    role: 'admin',
+                    balance: 0,
+                    city: 'bishkek',
+                    status: 'active',
+                    phone: '+996700123456'
+                };
+                userBalance = 0;
+                
+                document.getElementById('authScreen').classList.add('hidden');
+                document.getElementById('mainApp').classList.remove('hidden');
+                
+                setupUserInterface();
+                updateBalance();
+                updateDashboard();
+                
+                showNotification('Добро пожаловать, Админ!', 'success');
+                return;
+            }
+
+            const user = allUsers.find(u => u.email === email && u.password === password);
+            
+            if (user) {
+                if (user.status === 'blocked') {
+                    showNotification('Ваш аккаунт заблокирован!', 'error');
+                    return;
+                }
+                
+                currentUser = user;
+                userBalance = user.balance;
+                
+                // Обновляем время последнего входа
+                user.lastLogin = new Date();
+                
+                // Добавляем активность
+                userActivities.push({
+                    id: Date.now(),
+                    userId: user.id,
+                    userName: user.name,
+                    action: 'Вход в систему',
+                    ip: '192.168.1.' + Math.floor(Math.random() * 255),
+                    date: new Date(),
+                    details: 'Успешный вход'
+                });
+                
+                document.getElementById('authScreen').classList.add('hidden');
+                document.getElementById('mainApp').classList.remove('hidden');
+                
+                setupUserInterface();
+                updateBalance();
+                updateDashboard();
+                
+                showNotification(`Добро пожаловать, ${user.name}!`, 'success');
+            } else {
+                showNotification('Неверный email или пароль!', 'error');
+            }
+        }
+
+        function register() {
+            const name = document.getElementById('regName').value;
+            const email = document.getElementById('regEmail').value;
+            const password = document.getElementById('regPassword').value;
+            const referral = document.getElementById('regReferral').value;
+
+            if (!name || !email || !password) {
+                showNotification('Заполните все поля!', 'error');
+                return;
+            }
+
+            if (allUsers.find(u => u.email === email)) {
+                showNotification('Пользователь с таким email уже существует!', 'error');
+                return;
+            }
+
+            const newUser = {
+                id: allUsers.length + 1,
+                name: name,
+                email: email,
+                password: password,
+                role: 'user',
+                balance: 20, // Бонус за регистрацию
+                city: '',
+                status: 'active',
+                referral: referral,
+                phone: '',
+                registrationDate: new Date(),
+                lastLogin: new Date(),
+                totalDeposits: 0,
+                totalWithdrawals: 0,
+                hasRegistrationBonus: true
+            };
+
+            allUsers.push(newUser);
+            
+            // Добавляем активность
+            userActivities.push({
+                id: Date.now(),
+                userId: newUser.id,
+                userName: newUser.name,
+                action: 'Регистрация',
+                ip: '192.168.1.' + Math.floor(Math.random() * 255),
+                date: new Date(),
+                details: 'Новый пользователь зарегистрировался'
+            });
+
+            showNotification('Регистрация успешна! Получен бонус 20 сом. Войдите в систему.', 'success');
+            showLogin();
+        }
+
+        function logout() {
+            // Останавливаем систему доходов
+            if (dailyIncomeInterval) {
+                clearInterval(dailyIncomeInterval);
+                dailyIncomeInterval = null;
+            }
+            
+            currentUser = null;
+            userBalance = 0;
+            userVips = [];
+            document.getElementById('authScreen').classList.remove('hidden');
+            document.getElementById('mainApp').classList.add('hidden');
+            showLogin();
+        }
+
+        // Настройка интерфейса
+        function setupUserInterface() {
+            const isAdmin = currentUser.role === 'admin';
+            
+            // Обновляем роль пользователя
+            document.getElementById('userRole').textContent = isAdmin ? 'Админ' : 'Пользователь';
+            
+            // Обновляем профиль
+            document.getElementById('profileName').value = currentUser.name;
+            document.getElementById('profileEmail').value = currentUser.email;
+            document.getElementById('profileCity').value = currentUser.city || '';
+            
+            // Настраиваем меню
+            setupMenu(isAdmin);
+            
+            if (isAdmin) {
+                setupAdminPanel();
+            } else {
+                // Для обычных пользователей запускаем систему доходов
+                startDailyIncomeSystem();
+                updateMyVips();
+                updateVip1Button();
+            }
+        }
+
+        function setupMenu(isAdmin) {
+            let menuItems = [];
+            
+            if (isAdmin) {
+                menuItems = [
+                    { id: 'dashboard', icon: '🏠', text: 'Главная' },
+                    { id: 'admin', icon: '⚙️', text: 'Админ панель' }
+                ];
+            } else {
+                // Только основные разделы для пользователей
+                menuItems = [
+                    { id: 'dashboard', icon: '🏠', text: 'Главная' },
+                    { id: 'vips', icon: '💎', text: 'VIP пакеты' },
+                    { id: 'profile', icon: '👤', text: 'Профиль' }
+                ];
+            }
+
+            const desktopMenu = document.getElementById('sidebarMenu');
+            const mobileMenu = document.getElementById('mobileSidebarMenu');
+
+            [desktopMenu, mobileMenu].forEach(menu => {
+                menu.innerHTML = menuItems.map(item => `
+                    <li>
+                        <button onclick="showSection('${item.id}')${menu === mobileMenu ? '; closeMobileMenu();' : ''}" 
+                                class="w-full text-left p-3 rounded-lg hover:bg-gray-100 transition duration-200">
+                            ${item.icon} ${item.text}
+                        </button>
+                    </li>
+                `).join('');
+            });
+        }
+
+        // Уведомления
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = `notification ${type} show`;
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+
+        // Навигация
+        function showSection(sectionName) {
+            // Проверяем доступ к админ панели
+            if (sectionName === 'admin' && (!currentUser || currentUser.role !== 'admin')) {
+                showNotification('Доступ запрещен!', 'error');
+                return;
+            }
+            
+            const sections = document.querySelectorAll('.section');
+            sections.forEach(section => section.classList.add('hidden'));
+            
+            const targetSection = document.getElementById(sectionName);
+            if (targetSection) {
+                targetSection.classList.remove('hidden');
+                
+                // Показываем админ панель только для админов
+                if (sectionName === 'admin' && currentUser && currentUser.role === 'admin') {
+                    targetSection.style.display = 'block';
+                }
+            }
+        }
+
+        function toggleMobileMenu() {
+            const sidebar = document.getElementById('mobileSidebar');
+            const overlay = document.getElementById('mobileMenuOverlay');
+            
+            sidebar.classList.toggle('open');
+            overlay.classList.toggle('hidden');
+        }
+
+        function closeMobileMenu() {
+            const sidebar = document.getElementById('mobileSidebar');
+            const overlay = document.getElementById('mobileMenuOverlay');
+            
+            sidebar.classList.remove('open');
+            overlay.classList.add('hidden');
+        }
+
+        // Баланс и статистика
+        function updateBalance() {
+            document.getElementById('userBalance').textContent = userBalance.toLocaleString();
+            document.getElementById('dashBalance').textContent = userBalance.toLocaleString();
+        }
+
+        function updateDashboard() {
+            const activeVips = userVips.filter(vip => vip.status === 'active').length;
+            document.getElementById('activeInvestments').textContent = activeVips;
+            document.getElementById('referralCount').textContent = userVips.length;
+        }
+
+        // VIP пакеты
+        function buyVip(vipLevel, cost, dailyIncome) {
+            // Проверяем VIP 1 - можно купить только один раз
+            if (vipLevel === 1) {
+                const hasVip1 = userVips.some(vip => vip.level === 1);
+                if (hasVip1) {
+                    showNotification('VIP 1 можно купить только один раз!', 'error');
+                    return;
+                }
+            }
+
+            if (userBalance < cost) {
+                showNotification(`Недостаточно средств! Необходимо ${cost} сом.`, 'error');
+                return;
+            }
+
+            // Покупаем VIP
+            userBalance -= cost;
+            const newVip = {
+                id: Date.now(),
+                level: vipLevel,
+                cost: cost,
+                dailyIncome: dailyIncome,
+                purchaseDate: new Date(),
+                startDate: new Date(Date.now() + 24 * 60 * 60 * 1000), // Начинает работать завтра
+                endDate: new Date(Date.now() + 31 * 24 * 60 * 60 * 1000), // 30 дней + 1 день задержки
+                status: 'active',
+                totalEarned: 0,
+                daysLeft: 30
+            };
+
+            userVips.push(newVip);
+            
+            // Обновляем пользователя в базе
+            if (currentUser) {
+                currentUser.balance = userBalance;
+                const userIndex = allUsers.findIndex(u => u.id === currentUser.id);
+                if (userIndex !== -1) {
+                    allUsers[userIndex].balance = userBalance;
+                }
+            }
+
+            updateBalance();
+            updateDashboard();
+            updateMyVips();
+            updateVip1Button();
+            
+            showNotification(`VIP ${vipLevel} успешно куплен! Доходы начнут поступать завтра.`, 'success');
+        }
+
+        function updateMyVips() {
+            const container = document.getElementById('myVips');
+            if (userVips.length === 0) {
+                container.innerHTML = '<p class="text-gray-500">У вас пока нет активных VIP пакетов</p>';
+                return;
+            }
+
+            let html = '<div class="space-y-4">';
+            userVips.forEach((vip, index) => {
+                const now = new Date();
+                const daysLeft = Math.max(0, Math.ceil((vip.endDate - now) / (1000 * 60 * 60 * 24)));
+                const isStarted = now >= vip.startDate;
+                
+                html += `
+                    <div class="border border-gray-200 rounded-lg p-4 ${vip.level === 1 ? 'border-blue-300' : vip.level === 2 ? 'border-green-300' : 'border-purple-300'}">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <h4 class="font-semibold">💎 VIP ${vip.level}</h4>
+                                <p class="text-gray-600">Стоимость: ${vip.cost} сом</p>
+                                <p class="text-gray-600">Дата покупки: ${vip.purchaseDate.toLocaleDateString()}</p>
+                                <p class="text-gray-600">Осталось дней: ${daysLeft}</p>
+                                <p class="text-gray-600">Заработано: ${vip.totalEarned} сом</p>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-green-600 font-semibold">+${vip.dailyIncome} сом/день</p>
+                                <p class="text-sm text-gray-500">${isStarted ? 'Активен' : 'Начнет завтра'}</p>
+                                <span class="inline-block px-2 py-1 text-xs rounded-full ${vip.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}">${vip.status === 'active' ? 'Работает' : 'Завершен'}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        function updateVip1Button() {
+            const hasVip1 = userVips.some(vip => vip.level === 1);
+            const vip1Btn = document.getElementById('vip1Btn');
+            if (hasVip1) {
+                vip1Btn.textContent = 'Уже куплен';
+                vip1Btn.disabled = true;
+                vip1Btn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+                vip1Btn.classList.add('bg-gray-400', 'cursor-not-allowed');
+            }
+        }
+
+        // Система ежедневных доходов
+        function startDailyIncomeSystem() {
+            // Проверяем каждую минуту (в реальности можно каждый час)
+            dailyIncomeInterval = setInterval(() => {
+                const now = new Date();
+                
+                userVips.forEach(vip => {
+                    if (vip.status === 'active' && now >= vip.startDate) {
+                        // Проверяем, прошел ли день с последней выплаты
+                        const lastPayment = vip.lastPayment || vip.startDate;
+                        const hoursSinceLastPayment = (now - lastPayment) / (1000 * 60 * 60);
+                        
+                        // Для демонстрации выплачиваем каждые 2 минуты (в реальности каждые 24 часа)
+                        if (hoursSinceLastPayment >= 0.033) { // 2 минуты = 0.033 часа
+                            // Добавляем ежедневный доход
+                            userBalance += vip.dailyIncome;
+                            vip.totalEarned += vip.dailyIncome;
+                            vip.lastPayment = now;
+                            vip.daysLeft--;
+                            
+                            // Обновляем пользователя в базе
+                            if (currentUser) {
+                                currentUser.balance = userBalance;
+                                const userIndex = allUsers.findIndex(u => u.id === currentUser.id);
+                                if (userIndex !== -1) {
+                                    allUsers[userIndex].balance = userBalance;
+                                }
+                            }
+                            
+                            // Проверяем, закончился ли срок
+                            if (vip.daysLeft <= 0 || now >= vip.endDate) {
+                                vip.status = 'completed';
+                            }
+                            
+                            updateBalance();
+                            updateMyVips();
+                            
+                            showNotification(`Получен доход: +${vip.dailyIncome} сом от VIP ${vip.level}`, 'success');
+                        }
+                    }
+                });
+            }, 60000); // Проверяем каждую минуту
+        }
+
+
+
+        // Профиль
+        function updateProfile() {
+            const name = document.getElementById('profileName').value;
+            const email = document.getElementById('profileEmail').value;
+            const phone = document.getElementById('profilePhone').value;
+            const city = document.getElementById('profileCity').value;
+
+            currentUser.name = name;
+            currentUser.email = email;
+            currentUser.phone = phone;
+            currentUser.city = city;
+
+            // Обновляем в массиве пользователей
+            const userIndex = allUsers.findIndex(u => u.id === currentUser.id);
+            if (userIndex !== -1) {
+                allUsers[userIndex] = { ...currentUser };
+            }
+
+            showNotification('Профиль успешно обновлен!', 'success');
+        }
+
+        // АДМИН ПАНЕЛЬ
+        function setupAdminPanel() {
+            updateAdminStats();
+            loadUsersTable();
+            loadDepositsTable();
+            loadWithdrawalsTable();
+            setupCharts();
+        }
+
+        function updateAdminStats() {
+            // Считаем только обычных пользователей, админа исключаем
+            const regularUsers = allUsers.filter(user => user.role !== 'admin');
+            document.getElementById('totalUsers').textContent = regularUsers.length;
+            document.getElementById('totalInvestments').textContent = systemStats.totalInvestments;
+            document.getElementById('totalAmount').textContent = systemStats.totalAmount.toLocaleString();
+            document.getElementById('todayIncome').textContent = systemStats.todayIncome.toLocaleString();
+        }
+
+        function showAdminTab(tabName) {
+            // Скрываем все табы
+            document.querySelectorAll('.admin-tab-content').forEach(tab => {
+                tab.classList.add('hidden');
+            });
+            
+            // Показываем выбранный таб
+            document.getElementById(`admin${tabName.charAt(0).toUpperCase() + tabName.slice(1)}`).classList.remove('hidden');
+            
+            // Обновляем активную кнопку
+            document.querySelectorAll('.admin-tab-btn').forEach(btn => {
+                btn.classList.remove('border-blue-500', 'text-blue-600');
+                btn.classList.add('border-transparent', 'text-gray-500');
+            });
+            
+            event.target.classList.remove('border-transparent', 'text-gray-500');
+            event.target.classList.add('border-blue-500', 'text-blue-600');
+        }
+
+        function loadUsersTable() {
+            const tbody = document.getElementById('usersTable');
+            // Показываем только обычных пользователей, админа скрываем
+            const regularUsers = allUsers.filter(user => user.role !== 'admin');
+            tbody.innerHTML = regularUsers.map(user => `
+                <tr>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-medium text-gray-900">${user.name}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${user.email}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-red-600 font-mono">${user.password}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${user.phone || 'Не указан'}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${user.balance.toLocaleString()} сом</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${user.registrationDate.toLocaleDateString()}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full ${user.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                            ${user.status === 'active' ? 'Активен' : 'Заблокирован'}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <button onclick="toggleUserStatus(${user.id})" class="text-indigo-600 hover:text-indigo-900 mr-2 text-xs">
+                            ${user.status === 'active' ? 'Блок' : 'Разблок'}
+                        </button>
+                        <button onclick="editUserBalance(${user.id})" class="text-green-600 hover:text-green-900 mr-2 text-xs">Баланс</button>
+                        <button onclick="viewUserDetails(${user.id})" class="text-blue-600 hover:text-blue-900 text-xs">Детали</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function loadDepositsTable() {
+            const tbody = document.getElementById('depositsTable');
+            const pendingCount = pendingDeposits.filter(d => d.status === 'pending').length;
+            document.getElementById('pendingDepositsCount').textContent = pendingCount;
+            
+            tbody.innerHTML = pendingDeposits.map(deposit => `
+                <tr class="${deposit.status === 'pending' ? 'bg-yellow-50' : ''}">
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${deposit.userName}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${deposit.userEmail}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-green-600">${deposit.amount.toLocaleString()} сом</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${deposit.method}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${deposit.phone}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${deposit.date.toLocaleString()}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                            deposit.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 
+                            deposit.status === 'approved' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                        }">
+                            ${deposit.status === 'pending' ? 'Ожидает' : deposit.status === 'approved' ? 'Одобрено' : 'Отклонено'}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        ${deposit.status === 'pending' ? `
+                            <button onclick="approveDeposit(${deposit.id})" class="text-green-600 hover:text-green-900 mr-2 text-xs">Одобрить</button>
+                            <button onclick="rejectDeposit(${deposit.id})" class="text-red-600 hover:text-red-900 text-xs">Отклонить</button>
+                        ` : '-'}
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function loadWithdrawalsTable() {
+            const tbody = document.getElementById('withdrawalsTable');
+            const pendingCount = pendingWithdrawals.filter(w => w.status === 'pending').length;
+            document.getElementById('pendingWithdrawalsCount').textContent = pendingCount;
+            
+            tbody.innerHTML = pendingWithdrawals.map(withdrawal => `
+                <tr class="${withdrawal.status === 'pending' ? 'bg-red-50' : ''}">
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${withdrawal.userName}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${withdrawal.userEmail}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-red-600">${withdrawal.amount.toLocaleString()} сом</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${withdrawal.method}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${withdrawal.phone}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${withdrawal.date.toLocaleString()}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                            withdrawal.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 
+                            withdrawal.status === 'approved' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                        }">
+                            ${withdrawal.status === 'pending' ? 'Ожидает' : withdrawal.status === 'approved' ? 'Выплачено' : 'Отклонено'}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        ${withdrawal.status === 'pending' ? `
+                            <button onclick="approveWithdrawal(${withdrawal.id})" class="text-green-600 hover:text-green-900 mr-2 text-xs">Выплатить</button>
+                            <button onclick="rejectWithdrawal(${withdrawal.id})" class="text-red-600 hover:text-red-900 text-xs">Отклонить</button>
+                        ` : '-'}
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Глобальные настройки банковской карты
+        let bankCardSettings = {
+            bankName: 'финка банк',
+            cardNumber: '9417 7189 2770 1693',
+            recipient: 'INSTANT 30061.',
+            phone: '0000000000'
+        };
+
+        // Показать реквизиты для оплаты
+        function showPaymentDetails() {
+            const method = document.getElementById('depositMethod').value;
+            const detailsDiv = document.getElementById('paymentDetails');
+            const infoDiv = document.getElementById('paymentInfo');
+            
+            if (!method) {
+                detailsDiv.classList.add('hidden');
+                return;
+            }
+            
+            const paymentMethods = {
+                elsom: {
+                    name: 'Элсом',
+                    recipient: bankCardSettings.recipient,
+                    phone: bankCardSettings.phone,
+                    icon: '📱'
+                },
+                odengi: {
+                    name: 'О!Деньги',
+                    recipient: bankCardSettings.recipient,
+                    phone: bankCardSettings.phone,
+                    icon: '💳'
+                },
+                megapay: {
+                    name: 'MegaPay',
+                    recipient: bankCardSettings.recipient,
+                    phone: bankCardSettings.phone,
+                    icon: '🏦'
+                },
+                mbank: {
+                    name: bankCardSettings.bankName,
+                    recipient: bankCardSettings.recipient,
+                    phone: bankCardSettings.phone,
+                    card: bankCardSettings.cardNumber,
+                    icon: '💳'
+                },
+                optima: {
+                    name: bankCardSettings.bankName,
+                    recipient: bankCardSettings.recipient,
+                    phone: bankCardSettings.phone,
+                    card: bankCardSettings.cardNumber,
+                    icon: '🏛️'
+                }
+            };
+            
+            const methodInfo = paymentMethods[method];
+            if (methodInfo) {
+                let html = `
+                    <div class="flex items-center space-x-2 mb-3">
+                        <span class="text-lg">${methodInfo.icon}</span>
+                        <span class="font-semibold text-blue-800">${methodInfo.name}</span>
+                    </div>
+                    <div class="space-y-2">
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Получатель:</span>
+                            <span class="font-semibold">${methodInfo.recipient}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Номер телефона:</span>
+                            <span class="font-mono font-semibold text-green-600">${methodInfo.phone}</span>
+                        </div>
+                `;
+                
+                if (methodInfo.card) {
+                    html += `
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Номер карты:</span>
+                            <span class="font-mono font-semibold text-blue-600">${methodInfo.card}</span>
+                        </div>
+                    `;
+                }
+                
+                html += `
+                    </div>
+                    <div class="mt-3 flex space-x-2">
+                        <button onclick="copyToClipboard('${methodInfo.phone}')" class="flex-1 bg-blue-600 text-white px-3 py-1 rounded text-xs hover:bg-blue-700">
+                            Копировать номер
+                        </button>
+                `;
+                
+                if (methodInfo.card) {
+                    html += `
+                        <button onclick="copyToClipboard('${methodInfo.card}')" class="flex-1 bg-green-600 text-white px-3 py-1 rounded text-xs hover:bg-green-700">
+                            Копировать карту
+                        </button>
+                    `;
+                }
+                
+                html += '</div>';
+                
+                infoDiv.innerHTML = html;
+                detailsDiv.classList.remove('hidden');
+            }
+        }
+        
+        // Копировать в буфер обмена
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                showNotification('Скопировано в буфер обмена!', 'success');
+            }).catch(() => {
+                // Fallback для старых браузеров
+                const textArea = document.createElement('textarea');
+                textArea.value = text;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                showNotification('Скопировано в буфер обмена!', 'success');
+            });
+        }
+
+        // Функции для пополнения и вывода
+        function requestDeposit() {
+            const amount = parseInt(document.getElementById('depositAmount').value);
+            const method = document.getElementById('depositMethod').value;
+            const phone = document.getElementById('depositPhone').value;
+
+            if (!amount || amount < 700) {
+                showNotification('Минимальная сумма пополнения 700 сом!', 'error');
+                return;
+            }
+
+            if (!method) {
+                showNotification('Выберите способ пополнения!', 'error');
+                return;
+            }
+
+            if (!phone) {
+                showNotification('Укажите номер телефона!', 'error');
+                return;
+            }
+
+            const deposit = {
+                id: Date.now(),
+                userId: currentUser.id,
+                userName: currentUser.name,
+                userEmail: currentUser.email,
+                amount: amount,
+                method: method,
+                phone: phone,
+                date: new Date(),
+                status: 'pending'
+            };
+
+            pendingDeposits.push(deposit);
+            
+            // Очищаем форму
+            document.getElementById('depositAmount').value = '';
+            document.getElementById('depositMethod').value = '';
+            document.getElementById('depositPhone').value = '';
+
+            showNotification(`Заявка на пополнение ${amount} сом подана! Ожидайте подтверждения администратора.`, 'success');
+        }
+
+        function requestWithdrawal() {
+            const amount = parseInt(document.getElementById('withdrawAmount').value);
+            const method = document.getElementById('withdrawMethod').value;
+            const phone = document.getElementById('withdrawPhone').value;
+
+            // Проверяем наличие VIP пакетов
+            if (userVips.length === 0) {
+                showNotification('Для вывода средств необходимо иметь хотя бы один VIP пакет!', 'error');
+                return;
+            }
+
+            if (!amount || amount < 500) {
+                showNotification('Минимальная сумма вывода 500 сом!', 'error');
+                return;
+            }
+
+            if (amount > userBalance) {
+                showNotification('Недостаточно средств на балансе!', 'error');
+                return;
+            }
+
+            if (!method) {
+                showNotification('Выберите способ вывода!', 'error');
+                return;
+            }
+
+            if (!phone) {
+                showNotification('Укажите номер телефона!', 'error');
+                return;
+            }
+
+            const withdrawal = {
+                id: Date.now(),
+                userId: currentUser.id,
+                userName: currentUser.name,
+                userEmail: currentUser.email,
+                amount: amount,
+                method: method,
+                phone: phone,
+                date: new Date(),
+                status: 'pending'
+            };
+
+            pendingWithdrawals.push(withdrawal);
+            
+            // Очищаем форму
+            document.getElementById('withdrawAmount').value = '';
+            document.getElementById('withdrawMethod').value = '';
+            document.getElementById('withdrawPhone').value = '';
+
+            showNotification(`Заявка на вывод ${amount} сом подана! Ожидайте обработки администратором.`, 'success');
+        }
+
+        // Админские функции для обработки заявок
+        function approveDeposit(depositId) {
+            const deposit = pendingDeposits.find(d => d.id === depositId);
+            if (deposit) {
+                deposit.status = 'approved';
+                
+                // Добавляем деньги пользователю
+                const user = allUsers.find(u => u.id === deposit.userId);
+                if (user) {
+                    user.balance += deposit.amount;
+                    user.totalDeposits += deposit.amount;
+                    
+                    // Если это текущий пользователь, обновляем его баланс
+                    if (currentUser && currentUser.id === user.id) {
+                        userBalance = user.balance;
+                        updateBalance();
+                    }
+                }
+
+                loadDepositsTable();
+                loadUsersTable();
+                showNotification(`Пополнение на ${deposit.amount} сом одобрено для ${deposit.userName}`, 'success');
+            }
+        }
+
+        function rejectDeposit(depositId) {
+            const deposit = pendingDeposits.find(d => d.id === depositId);
+            if (deposit) {
+                deposit.status = 'rejected';
+                loadDepositsTable();
+                showNotification(`Пополнение для ${deposit.userName} отклонено`, 'success');
+            }
+        }
+
+        function approveWithdrawal(withdrawalId) {
+            const withdrawal = pendingWithdrawals.find(w => w.id === withdrawalId);
+            if (withdrawal) {
+                withdrawal.status = 'approved';
+                
+                // Списываем деньги у пользователя
+                const user = allUsers.find(u => u.id === withdrawal.userId);
+                if (user) {
+                    user.balance -= withdrawal.amount;
+                    user.totalWithdrawals += withdrawal.amount;
+                }
+
+                loadWithdrawalsTable();
+                loadUsersTable();
+                showNotification(`Вывод ${withdrawal.amount} сом выплачен для ${withdrawal.userName}`, 'success');
+            }
+        }
+
+        function rejectWithdrawal(withdrawalId) {
+            const withdrawal = pendingWithdrawals.find(w => w.id === withdrawalId);
+            if (withdrawal) {
+                withdrawal.status = 'rejected';
+                loadWithdrawalsTable();
+                showNotification(`Вывод для ${withdrawal.userName} отклонен`, 'success');
+            }
+        }
+
+        function viewUserDetails(userId) {
+            const user = allUsers.find(u => u.id === userId);
+            if (user) {
+                alert(`Детали пользователя:
+                
+Имя: ${user.name}
+Email: ${user.email}
+Пароль: ${user.password}
+Телефон: ${user.phone || 'Не указан'}
+Город: ${user.city || 'Не указан'}
+Баланс: ${user.balance.toLocaleString()} сом
+Дата регистрации: ${user.registrationDate.toLocaleDateString()}
+Последний вход: ${user.lastLogin.toLocaleString()}
+Всего пополнений: ${user.totalDeposits.toLocaleString()} сом
+Всего выводов: ${user.totalWithdrawals.toLocaleString()} сом
+Статус: ${user.status === 'active' ? 'Активен' : 'Заблокирован'}`);
+            }
+        }
+
+        function toggleUserStatus(userId) {
+            const user = allUsers.find(u => u.id === userId);
+            if (user) {
+                user.status = user.status === 'active' ? 'blocked' : 'active';
+                loadUsersTable();
+                showNotification(`Пользователь ${user.status === 'active' ? 'разблокирован' : 'заблокирован'}`, 'success');
+            }
+        }
+
+        function editUserBalance(userId) {
+            const user = allUsers.find(u => u.id === userId);
+            if (user) {
+                const newBalance = prompt(`Текущий баланс: ${user.balance} сом\nВведите новый баланс:`, user.balance);
+                if (newBalance !== null && !isNaN(newBalance)) {
+                    user.balance = parseInt(newBalance);
+                    
+                    // Если это текущий пользователь, обновляем его баланс
+                    if (currentUser && currentUser.id === userId) {
+                        userBalance = user.balance;
+                        updateBalance();
+                    }
+                    
+                    loadUsersTable();
+                    showNotification('Баланс пользователя обновлен', 'success');
+                }
+            }
+        }
+
+        function setupCharts() {
+            // График по дням
+            const dailyCtx = document.getElementById('dailyChart').getContext('2d');
+            new Chart(dailyCtx, {
+                type: 'line',
+                data: {
+                    labels: ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'],
+                    datasets: [{
+                        label: 'Новые инвестиции',
+                        data: [12, 19, 3, 5, 2, 3, 9],
+                        borderColor: 'rgb(59, 130, 246)',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+
+            // График по планам
+            const plansCtx = document.getElementById('plansChart').getContext('2d');
+            new Chart(plansCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Стартовый', 'Продвинутый', 'Премиум'],
+                    datasets: [{
+                        data: [45, 35, 20],
+                        backgroundColor: [
+                            'rgb(59, 130, 246)',
+                            'rgb(16, 185, 129)',
+                            'rgb(139, 92, 246)'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+        }
+
+        // Маркетинг функции
+        function createPromoCode() {
+            const code = document.getElementById('promoCode').value;
+            const discount = document.getElementById('promoDiscount').value;
+            
+            if (code && discount) {
+                showNotification(`Промо код ${code} создан со скидкой ${discount}%`, 'success');
+                document.getElementById('promoCode').value = '';
+                document.getElementById('promoDiscount').value = '';
+            }
+        }
+
+        function sendNotification() {
+            const title = document.getElementById('notificationTitle').value;
+            const text = document.getElementById('notificationText').value;
+            
+            if (title && text) {
+                showNotification(`Уведомление "${title}" отправлено всем пользователям`, 'success');
+                document.getElementById('notificationTitle').value = '';
+                document.getElementById('notificationText').value = '';
+            }
+        }
+
+        function updateBonuses() {
+            showNotification('Настройки бонусов обновлены', 'success');
+        }
+
+        // Финансовые функции
+        function showTransactions() {
+            showNotification('Открыта история транзакций', 'success');
+        }
+
+        function generateReport() {
+            showNotification('Отчет сформирован и отправлен на email', 'success');
+        }
+
+        function exportData() {
+            showNotification('Данные экспортированы в Excel файл', 'success');
+        }
+
+        function updateRates() {
+            showNotification('Курсы валют обновлены', 'success');
+        }
+
+        // Безопасность
+        function updateSecurity() {
+            showNotification('Настройки безопасности сохранены', 'success');
+        }
+
+        // Настройки
+        function createBackup() {
+            showNotification('Резервная копия создана успешно', 'success');
+        }
+
+        function restoreBackup() {
+            if (confirm('Вы уверены, что хотите восстановить данные из резервной копии?')) {
+                showNotification('Данные восстановлены из резервной копии', 'success');
+            }
+        }
+
+        // Функция обновления настроек карты
+        function updateCardSettings() {
+            const bankName = document.getElementById('bankName').value;
+            const cardNumber = document.getElementById('cardNumber').value;
+            const recipient = document.getElementById('cardRecipient').value;
+            const phone = document.getElementById('cardPhone').value;
+
+            if (!bankName || !cardNumber || !recipient || !phone) {
+                showNotification('Заполните все поля!', 'error');
+                return;
+            }
+
+            // Обновляем глобальные настройки
+            bankCardSettings.bankName = bankName;
+            bankCardSettings.cardNumber = cardNumber;
+            bankCardSettings.recipient = recipient;
+            bankCardSettings.phone = phone;
+
+            // Обновляем отображение текущих реквизитов
+            document.getElementById('currentBankName').textContent = bankName;
+            document.getElementById('currentCardNumber').textContent = cardNumber;
+            document.getElementById('currentRecipient').textContent = recipient;
+            document.getElementById('currentPhone').textContent = phone;
+
+            showNotification('Настройки карты успешно обновлены! Новые реквизиты будут показаны пользователям.', 'success');
+        }
+
+        // Запуск приложения
+        init();
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'96a5eb70573decbb',t:'MTc1NDM5Mjk3OC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
